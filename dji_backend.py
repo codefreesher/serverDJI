@@ -32,8 +32,28 @@ CORS(app)
 DJI_BASE = 'https://dealersystem-abroad.dji.com'
 UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
+
+def build_proxies():
+    """Đọc proxy từ env. Hỗ trợ SOCKS5 và HTTP/S proxy.
+    Env: PROXY_URL=socks5://user:pass@host:port hoặc http://user:pass@host:port
+         PROXY_ENABLED=1 để bật.
+    """
+    if os.environ.get('PROXY_ENABLED', '1') not in ('1', 'true', 'True'):
+        return {}
+    url = os.environ.get('PROXY_URL', '').strip()
+    if not url:
+        return {}
+    if url.startswith('socks5://'):
+        proxy_url = 'socks5h://' + url[len('socks5://'):]
+    else:
+        proxy_url = url
+    print(f'[PROXY] enabled: {proxy_url.split("@")[-1]}', flush=True)
+    return {'http': proxy_url, 'https': proxy_url}
+
+
 session = requests.Session()
 session.headers.update({'User-Agent': UA})
+session.proxies.update(build_proxies())
 
 
 def get_session_cookies():
