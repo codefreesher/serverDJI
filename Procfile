@@ -1,0 +1,1 @@
+web: gunicorn dji_backend:app
