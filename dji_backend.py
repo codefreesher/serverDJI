@@ -81,6 +81,8 @@ def check_login(username, password):
         data = {}
 
     state = str(data.get('state') or '')
+    if state not in ('1', '2', ''):
+        print(f'[DEBUG] unexpected state={state} body={resp.text[:500]} status={resp.status_code}', flush=True)
     is_login = data.get('success') is True or data.get('IsLogin') is True
     is_otp = state == '2'
     is_ok = is_login or state == '1'
@@ -167,9 +169,15 @@ def resend_otp(username, password):
 
 @app.route('/health')
 def health():
+    try:
+        ip_resp = requests.get('https://api.ipify.org', timeout=5)
+        public_ip = ip_resp.text.strip()
+    except Exception:
+        public_ip = 'unknown'
     return jsonify({
         'service': 'DJI Login Backend',
         'version': '1.0',
+        'public_ip': public_ip,
         'endpoints': ['POST /dji/login', 'POST /dji/otp', 'POST /dji/resend'],
         'time': time.strftime('%Y-%m-%d %H:%M:%S'),
     })
@@ -199,6 +207,7 @@ def api_login():
         'json': result['json'],
         'status': result['status'],
         'backend': 'python-local',
+        'raw_body': result['json'].get('body') or '',
         'attempts': [{
             'endpoint': '/en/Home/CheckLogin',
             'contentType': 'form',
